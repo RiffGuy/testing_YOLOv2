@@ -12,9 +12,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # gpus = tf.config.experimental.list_physical_devices('GPU')
 # tf.config.experimental.set_memory_growth(gpus[0], True)
-#
+
 class YOLOv2():
-    def __init__(self, input_hw, anchors, classes=91):
+    def __init__(self, input_hw, anchors=5, classes=91):
+        """
+
+        :param input_hw: tuple, (size_h, size_w), size of Yolo v2 input image
+        :param anchors: int, number of anchors
+        :param classes: int, number of classes
+        """
         self.input_hw = input_hw
         self.grid_h_cnt, self.grid_w_cnt = self.input_hw[0] // 32, self.input_hw[1] // 32
         self.grid_h, self.grid_w = self.input_hw[0] // self.grid_h_cnt, self.input_hw[1] // self.grid_w_cnt
@@ -24,12 +30,34 @@ class YOLOv2():
         self.model = self._build()
 
     def _conv(self, layer, filters, kernel, name):
+        """
+        Add Convolution Network Layer
+        :param layer: previous layer
+        :param filters: create number of filters
+        :param kernel: size of kernel
+        :param name:
+        :return: new layer with convolution layer added from previous layer
+        """
         layer = layers.Conv2D(filters, kernel, padding='same', name="conv_"+name)(layer)
         layer = layers.BatchNormalization(name="bn_"+name)(layer)
         layer = layers.LeakyReLU(name="Lrelu_"+name)(layer)
         return layer
 
-    def _bulid(self):
+    def _build(self):
+        """
+        build Yolo v2 feature model
+        input: (input_size_h, input_size_w, 3)
+        output: (grid_h_cnt, grid_w_cnt, anchors, classes)
+
+        ex) input image size = (416, 416)
+            anchors: 5
+            classes: 91
+
+            input: (416, 416, 3)
+            output: (13, 13, 5, 91)
+
+        :return:
+        """
         inputs = layers.Input(shape=(self.input_hw[0], self.input_hw[1], 3), name="input")
 
         feature_model = self._conv(inputs, 32, (3, 3), name="0")
@@ -76,6 +104,12 @@ class YOLOv2():
         return feature_model
 
     def _loss(self, y_true, y_pred):
+        """
+        Manual loss function
+        :param y_true: true data
+        :param y_pred: predict data
+        :return:
+        """
         true_txty = tf.reshape(y_true[..., 0:2], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size, 2))
         true_twth = tf.reshape(y_true[..., 2:4], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size, 2))
         true_conf = tf.reshape(y_true[..., 4:5], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size))
@@ -96,7 +130,7 @@ class YOLOv2():
 
         return total_loss
 
-    def train(self):
+    def train(self, epoch, batch_size):
         pass
     
     def predict(self):
