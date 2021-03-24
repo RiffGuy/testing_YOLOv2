@@ -3,14 +3,16 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-from tensorflow.keras import datadsets, layers, models, losses
+from tensorflow.keras import layers, models, losses
 import numpy as np
+
+import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(gpus[0], True)
- 
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# tf.config.experimental.set_memory_growth(gpus[0], True)
+#
 class YOLOv2():
     def __init__(self, input_hw, anchors, classes=91):
         self.input_hw = input_hw
@@ -73,7 +75,7 @@ class YOLOv2():
         
         return feature_model
 
-    def _loss(self):
+    def _loss(self, y_true, y_pred):
         true_txty = tf.reshape(y_true[..., 0:2], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size, 2))
         true_twth = tf.reshape(y_true[..., 2:4], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size, 2))
         true_conf = tf.reshape(y_true[..., 4:5], (-1, self.grid_h_cnt * self.grid_h_cnt * self.anchors_size))
@@ -99,3 +101,7 @@ class YOLOv2():
     
     def predict(self):
         pass
+
+if __name__ == "__main__" :
+    print(tf.test.is_gpu_available())
+    print(tf.__version__)
